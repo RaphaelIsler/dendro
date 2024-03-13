@@ -1,0 +1,63 @@
+{
+	"version": "0.0.1",
+	"tasks": [
+
+		{
+			"label": "Start Web-Preview",
+			"type": "shell",
+			"command": "trunk",
+			"args": [
+				"serve", "--features=\"frontend\""
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Web-build",
+			"type": "shell",
+			"command": "trunk",
+			"args": [
+				"build", "--features=\"frontend\"", "--release"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build"
+		},
+
+		{
+			"label": "Build Debug",
+			"type": "cargo",
+			"command": "build",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"args":["--features", "backend"],
+			"group": "build"
+		},
+		{
+			"label": "Build Release",
+			"type": "cargo",
+			"command": "build",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"args":["--features", "backend"],
+			"group": "build"
+		},
+	]
+}
