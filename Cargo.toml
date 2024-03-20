@@ -6,7 +6,7 @@ edition = "2021"
 [features]
 default =[]
 frontend = ["gloo", "gloo-net",  "wasm-bindgen", "yew", "web-sys", "wasm-bindgen-futures", "serde-wasm-bindgen"]
-backend = ["actix", "actix-rt", "actix-files", "actix-web-actors", "actix-web", "futures", "http", "openssl", "rand", "sqlx"]
+backend = ["actix", "actix-rt", "actix-files", "actix-web-actors", "actix-web", "futures", "http", "openssl", "rand", "sqlx", "serde-xml-rs", "tokio"]
 
 # [lib]
 #name = "dendro"
@@ -43,7 +43,8 @@ http = { version ="0.2.1", optional = true}
 openssl = { version = "0.10", features = ["v110", "vendored"], optional = true}
 rand  = { version = "0.8.3", optional = true}
 sqlx = { version = "0.6", features = [  "runtime-tokio-rustls", "postgres", "uuid"] , optional = true}
-#tokio = { version ="1.13", features = ["full", "time"], optional = true}
+serde-xml-rs = { version = "0.6.0", optional = true}
+tokio = { version = "*", optional = true, features = ["rt"]}
 
 
 [profile.release]

@@ -11,11 +11,19 @@ fn main() {
 }
 
 
+pub mod interface;
+pub mod project;
+
 
 #[cfg(feature = "backend")]
 #[path ="."]
 pub mod backend{
     pub mod server;
+    mod service;
+    pub use service::Service;
+    pub mod osm4;
+    pub use osm4::Osm4;
+
 }
 
 #[cfg(feature = "backend")]

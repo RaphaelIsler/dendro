@@ -1,4 +1,4 @@
-use actix_web::{ App, HttpServer, web, get, Responder, HttpResponse};
+use actix_web::{ App, HttpServer, web, post, get, Responder, HttpResponse};
 use anyhow::Result;
 use std::io::Read;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
@@ -13,7 +13,7 @@ pub struct Config{
     pub store_path: String,
 }
 
-
+#[cfg(feature="backend")]
 impl Config{
     pub fn load_from_file(path: &str) -> anyhow::Result<Config>{
         let mut file = std::fs::File::open(path)?;
@@ -27,9 +27,9 @@ pub struct Server{
     config: Config,
 }
 
-#[derive(Clone)]
+//#[derive(Clone)]
 pub struct AppData{
-
+    service: crate::Service,
 }
 
 impl AppData{
@@ -37,10 +37,24 @@ impl AppData{
 
 
 #[get("/image")]
-async fn get_image(_data: web::Data<AppData>) -> impl Responder{
-    HttpResponse::Ok().body("an image")
+async fn get_image(data: web::Data<AppData>) -> actix_web::Result<actix_files::NamedFile> {
+    match data.service.get_image_path().await{
+        Ok(path) => {
+            Ok(actix_files::NamedFile::open(path)?)
+        }
+        Err(err) => {
+            Err(std::io::Error::new(std::io::ErrorKind::NotFound, err).into())
+        }
+    }
 }
 
+
+
+#[post("/control")]
+async fn control(data: web::Data<AppData>, request: web::Json<crate::interface::ToBackend>) -> actix_web::Result<impl Responder>{
+    let response = data.service.control(request.into_inner()).await;
+    Ok(web::Json(response))
+}
 
 
 impl Server{
@@ -53,6 +67,7 @@ impl Server{
 
     pub async fn start(&mut self) -> Result<()>{
         let app_data = web::Data::new(AppData{
+            service: crate::Service::new()
         });
 
         let (_,_) = futures::join!(
@@ -63,6 +78,8 @@ impl Server{
                 HttpServer::new(move || {
                     App::new()
                         .app_data(app_data.clone())
+                        .service(get_image)
+                        .service(control)
                         .service(actix_files::Files::new("/", std::path::PathBuf::from(static_path.clone()))
                             .use_last_modified(true)
                             .index_file("index.html".to_string()))
@@ -84,6 +101,8 @@ impl Server{
                 HttpServer::new(move || {
                     App::new()
                         .app_data(app_data.clone())
+                        .service(get_image)
+                        .service(control)
                         .service(actix_files::Files::new("/", std::path::PathBuf::from(static_path.clone()))
                             .use_last_modified(true)
                             .index_file("index.html".to_string()))

@@ -59,5 +59,31 @@
 			"args":["--features", "backend"],
 			"group": "build"
 		},
+		{
+			"label": "Release Windows",
+			"type": "cargo",
+			"command": "build",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"args":["--features", "backend", "--target", "x86_64-pc-windows-gnu"],
+			"group": "build"
+		},
+		{
+			"label": "Unittest",
+			"type": "cargo",
+			"command": "test",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"args":["--features", "backend"],
+			"group": "build"
+		},
 	]
 }
