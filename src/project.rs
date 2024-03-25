@@ -16,11 +16,18 @@ impl Id{
         Self{id: uuid::Uuid::nil()}
     }
 }
+#[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum Category{
+    Start,
+    Measurement,
+    Jump
+}
 
 #[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Measurement{
     name: String,
     comment: String,
+    category: Category,
     x: i32,
     y: i32,
     distance: f64,
@@ -29,14 +36,8 @@ pub struct Measurement{
 
 
 #[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-struct Section{
-    all: Vec<Measurement>,
-}
-
-
-#[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 struct Path{
-    sections: Vec<Section>,
+    measurements: Vec<Measurement>,
 }
 
 #[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -57,21 +58,37 @@ mod backend_m{
     use super::*;
     impl From<crate::osm4::Measurement> for Measurement{
         fn from(value: crate::osm4::Measurement) -> Self {
-            Self { name: value.name, comment: value.comment, x: value.x, y: value.x, distance: value.distance }
+            Self { name: value.name, comment: value.comment, category: Category::Measurement, x: value.x, y: value.y, distance: value.distance }
         }
     }
 
 
-    impl From<crate::osm4::PathIndex> for Section{
-        fn from(value: crate::osm4::PathIndex) -> Self {
-            Self { all: value.measurements.iter().map(|x| (x.clone()).into()).collect()}
-        }
-    }
+//    impl From<crate::osm4::PathIndex> for Section{
+//        fn from(value: crate::osm4::PathIndex) -> Self {
+//            Self { all: value.measurements.iter().map(|x| (x.clone()).into()).collect()}
+//        }
+//    }
 
 
     impl From<crate::osm4::Path> for Path{
         fn from(value: crate::osm4::Path) -> Self {
-            Self { sections: value.paths.iter().map(|x| (x.clone()).into()).collect()}
+            let mut all = vec!();
+            for section in &value.paths{
+                let mut first = true;
+                for index in &section.measurements{
+                    let mut measurement: Measurement = index.clone().into();
+                    if first {
+                        first = false;
+                        measurement.category = Category::Jump;
+                    }
+                    if all.len() == 0{
+                        measurement.category = Category::Start;
+                    }
+                    all.push(measurement);
+                }
+            }
+
+            Self { measurements:  all}
         }
     }
 
@@ -98,7 +115,7 @@ mod backend_m{
                 },
                 image: Image { width: 5390, height: 688 },
                 path: Path{
-                    sections: vec!(),
+                    measurements: vec!(),
                 },
 
             }
@@ -139,9 +156,33 @@ mod frontend_m{
         let l2 = loader.clone();
         use std::ops::Deref;
         if let Some(project) = l2.deref(){
+            let mut last_measurement: Option<Measurement> = None;
             html! {
                 <svg width={project.image.width.to_string()} height = {project.image.height.to_string()} >
                     <image href={project.info.image_path()} width={project.image.width.to_string()} height = {project.image.height.to_string()} />
+                    {
+                        project.path.measurements.iter().map(|entry|{
+                            let ret = if let Some(last_measurement) = &last_measurement{
+                                match entry.category{
+                                    Category::Start => {
+                                        html! {<></>}
+                                    }
+                                    Category::Jump => {
+                                        html!{<line stroke="blue" x1={last_measurement.x.to_string()} y1={last_measurement.y.to_string()} x2 = {entry.x.to_string()} y2 = {entry.y.to_string()}/>}
+                                    },
+                                    Category::Measurement => {
+                                        html!{<line stroke="green" x1={last_measurement.x.to_string()} y1={last_measurement.y.to_string()} x2 = {entry.x.to_string()} y2 = {entry.y.to_string()}/>}
+                                    },
+
+                                }
+                            } else {
+                                html!{<></>}
+                            };
+                            last_measurement = Some(entry.clone());
+                            ret
+                        }).collect::<Html>()
+
+                    }
                     //<PathCmp path={project.path.clone()} />
                 </svg>
             }
